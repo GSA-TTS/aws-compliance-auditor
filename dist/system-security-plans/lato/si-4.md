@@ -1,20 +1,13 @@
 ---
 implementation-status:
-  - c-not-implemented
-  - c-partially-implemented
-  - c-planned
-  - c-alternative-implementation
-  - c-not-applicable
+  - c-implemented
+  - c-documented
 control-origination:
-  - c-inherited
-  - c-common-control
-  - c-hybrid-control
   - c-system-specific-control
 sort-id: si-04
 ---
 
-# si-4 - \[\] System Monitoring
-
+# SI-4: Information System Monitoring
 ## Control Statement
 
 - \[a.\] Monitor the system to detect:
@@ -107,3 +100,54 @@ ______________________________________________________________________
 Add control implementation description here for item si-4_smt.g
 
 ______________________________________________________________________
+
+
+## Implementation Status: Implemented
+
+## Control Statement
+
+The organization:
+a. Monitors events on the information system
+b. Detects security-relevant activities
+c. Protects monitoring tools from unauthorized access
+d. Heightens monitoring during periods of increased risk
+
+## Implementation
+
+### Monitoring Strategy
+
+1. AWS Services Used:
+   - GuardDuty for threat detection
+   - SecurityHub for security posture
+   - CloudWatch for metrics/logs
+   - Config for resource tracking
+
+2. Detection Capabilities:
+   - Malicious activity
+   - Unauthorized behaviors
+   - System anomalies
+   - Policy violations
+
+3. Tool Protection:
+   - Access controls
+   - Encryption at rest
+   - Secure transmission
+   - Audit logging
+
+4. Enhanced Monitoring:
+   - Incident response
+   - Threat alerts
+   - Risk escalation
+   - Compliance reporting
+
+### Evidence
+
+```sql
+select count(*),
+       severity_label,
+       workflow_status
+from aws_securityhub_finding
+where record_state = 'ACTIVE'
+group by severity_label, workflow_status
+order by severity_label;
+```

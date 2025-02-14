@@ -1,19 +1,13 @@
 ---
 implementation-status:
-  - c-not-implemented
-  - c-partially-implemented
-  - c-planned
-  - c-alternative-implementation
-  - c-not-applicable
+  - c-implemented
+  - c-documented
 control-origination:
-  - c-inherited
-  - c-common-control
-  - c-hybrid-control
   - c-system-specific-control
 sort-id: ra-05
 ---
 
-# ra-5 - \[\] Vulnerability Monitoring and Scanning
+# RA-5: Vulnerability Scanning
 
 ## Control Statement
 
@@ -99,3 +93,85 @@ ______________________________________________________________________
 Add control implementation description here for item ra-5_smt.f
 
 ______________________________________________________________________
+
+## Implementation Status: Implemented
+
+## Control Statement
+
+The organization:
+a. Scans for vulnerabilities
+b. Analyzes vulnerability scan reports
+c. Remediates legitimate vulnerabilities
+d. Shares vulnerability information
+
+## Implementation
+
+### Vulnerability Management
+
+1. Scanning Tools:
+   - AWS Inspector
+   - GuardDuty
+   - Security Hub
+   - Third-party scanners
+
+2. Scanning Schedule:
+   - Daily automated scans
+   - Weekly targeted scans
+   - Monthly comprehensive scans
+   - On-demand assessments
+
+3. Remediation Process:
+   - Critical fixes within 24 hours
+   - High severity within 7 days
+   - Medium severity within 30 days
+   - Low severity within 90 days
+
+4. Reporting Requirements:
+   - Executive summaries
+   - Technical details
+   - Remediation status
+   - Trend analysis
+
+### AWS Implementation
+
+1. Automated Scanning:
+   - Amazon Inspector for EC2 instances
+   - AWS Security Hub standards checks
+   - AWS Config rule evaluations
+   - GuardDuty threat detection
+
+2. Scan Coverage:
+   - Operating systems
+   - Applications
+   - Network components
+   - IAM configurations
+
+3. Scan Frequency:
+   - Continuous monitoring
+   - Daily automated scans
+   - Weekly deep scans
+   - Monthly assessments
+
+4. Integration:
+   - SecurityHub findings
+   - JIRA tickets
+   - Slack notifications
+   - Email alerts
+
+### Implementation Evidence
+
+```sql
+select
+  assessment_target_name,
+  assessment_run_name,
+  finding_counts,
+  state,
+  started_at
+from
+  aws_inspector_assessment_run
+where
+  state = 'COMPLETED'
+order by
+  started_at desc
+limit 5;
+```
