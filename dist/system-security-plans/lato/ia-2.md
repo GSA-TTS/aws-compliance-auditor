@@ -1,41 +1,62 @@
 ---
 implementation-status:
-  - c-not-implemented
-  - c-partially-implemented
-  - c-planned
-  - c-alternative-implementation
-  - c-not-applicable
+  - c-implemented
+  - c-documented
 control-origination:
-  - c-inherited
-  - c-common-control
-  - c-hybrid-control
   - c-system-specific-control
 sort-id: ia-02
 ---
 
-# ia-2 - \[\] Identification and Authentication (Organizational Users)
+# IA-2: Identification and Authentication
+
+## Implementation Status: Implemented
 
 ## Control Statement
 
-Uniquely identify and authenticate organizational users and associate that unique identification with processes acting on behalf of those users.
+The system uniquely identifies and authenticates organizational users.
 
-## Control guidance
+## Implementation
 
-Organizations can satisfy the identification and authentication requirements by complying with the requirements in [HSPD 12](#f16e438e-7114-4144-bfe2-2dfcad8cb2d0) . Organizational users include employees or individuals who organizations consider to have an equivalent status to employees (e.g., contractors and guest researchers). Unique identification and authentication of users applies to all accesses other than those that are explicitly identified in [AC-14](#ac-14) and that occur through the authorized use of group authenticators without individual authentication. Since processes execute on behalf of groups and roles, organizations may require unique identification of individuals in group accounts or for detailed accountability of individual activity.
+### Authentication Framework
 
-Organizations employ passwords, physical authenticators, or biometrics to authenticate user identities or, in the case of multi-factor authentication, some combination thereof. Access to organizational systems is defined as either local access or network access. Local access is any access to organizational systems by users or processes acting on behalf of users, where access is obtained through direct connections without the use of networks. Network access is access to organizational systems by users (or processes acting on behalf of users) where access is obtained through network connections (i.e., nonlocal accesses). Remote access is a type of network access that involves communication through external networks. Internal networks include local area networks and wide area networks.
+1. User Identification:
+   - Unique user IDs
+   - Role-based access
+   - Federation support
+   - External identity providers
 
-The use of encrypted virtual private networks for network connections between organization-controlled endpoints and non-organization-controlled endpoints may be treated as internal networks with respect to protecting the confidentiality and integrity of information traversing the network. Identification and authentication requirements for non-organizational users are described in [IA-8](#ia-8).
+2. Authentication Methods:
+   - Multi-factor authentication
+   - Password policies
+   - Hardware tokens
+   - Biometric factors
 
-## Control assessment-objective
+3. Access Management:
+   - Session controls
+   - Login restrictions
+   - Account lockout
+   - Password rotation
 
-organizational users are uniquely identified and authenticated;
-the unique identification of authenticated organizational users is associated with processes acting on behalf of those users.
+4. Monitoring & Compliance:
+   - Failed attempts tracking
+   - Suspicious activity alerts
+   - Compliance reporting
+   - Access reviews
 
-______________________________________________________________________
+### Evidence
 
-## What is the solution and how is it implemented?
-
-Add control implementation description here for control ia-2
-
-______________________________________________________________________
+```sql
+select
+  case
+    when min_password_length >= 14
+    and require_symbols
+    and require_numbers
+    and require_uppercase_characters
+    and require_lowercase_characters
+    and password_reuse_prevention >= 24
+    and max_password_age <= 90
+    then 'pass'
+    else 'fail'
+  end as password_policy_status
+from
+  aws_iam_password_policy;
