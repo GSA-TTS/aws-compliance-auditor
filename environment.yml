@@ -1,0 +1,17 @@
+name: app
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - nodejs
+  - streamlit
+  - pandas
+  - psycopg2
+  - boto3
+  - sqlalchemy
+  - psutil
+  - tqdm
+  - pip:
+    - streamlit-extras

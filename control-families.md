@@ -57,3 +57,18 @@ This family will contain things like any software scanning for security issues a
 ## `sr-`: Supply Chain Risk Management
 
 This family potentially has the most entangled set of controls with other systems in our boundary and will take communication with security and compliance partners to help understand how changes to this system impact SCRM. The controls here range from setting up a SCRM team to how we scan our software to mitigate risk.
+
+### implementation-status:
+
+```yaml
+  - c-not-implemented
+  - c-partially-implemented
+  - c-planned
+  - c-alternative-implementation
+  - c-not-applicable
+control-origination:
+  - c-inherited
+  - c-common-control
+  - c-hybrid-control
+  - c-system-specific-control
+```

@@ -1,2 +1,7 @@
+.cache
+.env
 .trestle/cache
 .trestle/_trash/
+.streamlit/secrets.toml
+__pycache__
+os

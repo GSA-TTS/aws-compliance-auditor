@@ -1,110 +1,227 @@
-# Compliance Template
+# AWS Compliance Auditor
 
-A suggested compliance documentation workflow using [OSCAL](https://pages.nist.gov/OSCAL/) with [Trestle](https://github.com/IBM/compliance-trestle) to generate a System Security Plan (SSP) using Markdown.
+A Streamlit-based dashboard for crosswalking compliance documentation and dynamic auditing of AWS infrastructure against security controls using [Steampipe/Powerpipe - as query engine](https://powerpipe.io/docs/run).
 
-This repo is currently a work in progress...
+## ⚠️ Security Notice
 
-## Usage
+This tool requires AWS credentials to perform compliance auditing. For security best practices:
 
-### To start
+1. Create [AWS Security Audit User in AWS Console](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) 
+1. With an attached IAM [SecurityAudit](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html) Role
+1. With an attached `Supplemental Policy` for additional services:
 
-Add an OSCAL Profile to [profiles](./profiles/lato/) that adheres to selected controls in the NIST 800-53 and CIS Docker Benchmark catalogs.
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "securityhub:*",
+                "config:*",
+                "cloudtrail:*",
+                "identitystore:*",
+                "ds:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
 
-### Make
+## Features
+- AWS SSO Management Interface
+- Security Controls Compliance Checking
+- Interactive Data Visualization
+- Automated Compliance Reports
 
-- `make generate` to have `trestle` generate the corresponding control statement in Markdown.
-- `make generate-with-header` to have `trestle` generate the corresponding control statement in Markdown with the status headers.
-- `make assemble` will generate the resulting OSCAL System Security Plan (SSP).
-- `make status` will print out some basic metrics about control status bits.
+## Architecture
 
-### Suggested workflow
+### System Context (C4)
+```mermaid
+C4Context
+title AWS Compliance Auditor - System Architecture
 
-Here is a suggested compliance documentation workflow that uses [compliance-trestle](https://github.com/IBM/compliance-trestle):
+Person(auditor, "Security Auditor", "User performing compliance checks")
 
-- Add a control to the [profile](./profiles/lato/) that will be satisfied.
-- Run `make generate` to have `trestle` generate the corresponding control statement in Markdown.
-  - This Markdown file will live in `dist/system-security-plans/`.
-- Flesh out implementation detail stubs for that control.
-  - It is OK to leave a control implementation description blank initially.
-  - Backfill missing implementation descriptions as needed.
-  - If links to existing code are needed, consider linking to high level artifacts with a general description.
-    - Avoid linking directly to lines of code as these will change over time.
-- (Optionally) Run `make assemble` to generate the resulting OSCAL System Security Plan (SSP).
-  - This is an optional step because nothing uses the OSCAL SSP yet.
+System_Boundary(compliance_system, "AWS Compliance Auditor") {
+    Container(webapp, "Streamlit App", "Web Interface")
+    Container(powerpipe, "Powerpipe", "Compliance Engine")
+    ContainerDb(postgres, "PostgreSQL", "Results Storage")
+}
 
-### Illustrative example
+System_Ext(aws, "AWS Cloud", "Target Infrastructure")
 
-- Add `ac-2` to the NIST import in the [example profile](./profiles/lato/example-profile.json).
-- `make generate` produces [ac-2.md](./dist/system-security-plans/ac-2.md)
-- Fill out the controls except for subsection `g`.
-- Commit and push to the repository and go through the usual code review procedures.
-- At some time in the future, add support for `ac-2:g` and link to the commit introducing that support.
-- Rinse and repeat for each control to document/expand upon.
+Rel(auditor, webapp, "Views dashboard")
+Rel(webapp, postgres, "Reads results")
+Rel(powerpipe, aws, "Queries resources")
+Rel(powerpipe, postgres, "Stores results")
+```
 
-### Status
+### Container View
+```mermaid
+C4Container
+title AWS Compliance Auditor - Container Architecture
 
-To track compliance status, there's a header yaml file with a status list. The options are:
+Container_Boundary(app, "AWS Compliance Auditor") {
+    Container(streamlit, "Streamlit App", "Python", "Interactive dashboard")
+    
+    Container_Boundary(powerpipe_system, "Powerpipe Service") {
+        Container(powerpipe, "Powerpipe Server", "Go", "Compliance engine")
+        Container(steampipe, "Steampipe", "Go", "Cloud query engine")
+        Container(aws_mod, "AWS Mods", "HCL", "Compliance benchmarks")
+    }
+    
+    ContainerDb(postgres, "PostgreSQL", "Database", "Stores compliance results")
+}
 
-- `c-not-implemented`: this control has not been met.
-- `c-not-documented`: this control has not been documented.
-- `c-implemented`: this control has been met.
-- `c-documented`: this control has been documented.
-- `c-organization-defined`: this control should be organization defined.
-- `c-inherited`: this control is inherited from AWS.
-- `c-org-help-needed`: this control needs to be implemented at a higher level.
+System_Ext(aws_api, "AWS Services", "Cloud Infrastructure")
 
-`make status` will print out some basic metrics about control status bits.
+Rel(streamlit, postgres, "Reads results")
+Rel(powerpipe, steampipe, "Executes queries")
+Rel(steampipe, aws_api, "Queries infrastructure")
+Rel(powerpipe, aws_mod, "Loads benchmarks")
+Rel(powerpipe, postgres, "Stores results")
+```
 
-### Effort
+## Implementation Details
 
-Some controls are tagged with an `effort` that estimates its level of difficulty. If absent, the `effort` is by default `low`. (Options are `low`, `medium`, and `high`.)
+### 1. Service Components
 
-## Controls
+#### Streamlit App (Port 8501)
+- Web interface for compliance dashboard
+- Reads results from PostgreSQL
+- Manages AWS authentication
+- Displays compliance reports
 
-Below are details about the controls, including additional parameters, notes, and control families.
+#### Powerpipe Service (Port 9033)
+- Runs compliance checks using Steampipe
+- AWS compliance benchmarks pre-installed
+- Executes as non-root user
+- Auto-updates available
 
-### Parameters
+#### PostgreSQL Database
+- Stores compliance results
+- Shared credentials via environment
+- Automatic password generation
+- Health checking enabled
 
-A few controls require us to supply parameters to the control. These parameter choices are given in the official NIST catalog description. For instance, `sc-12.2` requires us to choose between `NIST FIPS-compliant` or `NSA-approved` symmetric keys.
+### 2. Data Flow
+1. Powerpipe executes compliance checks
+2. Results stored in PostgreSQL
+3. Streamlit reads from database
+4. Real-time updates via polling
 
-To provide a parameter, edit the [example profile](./profiles/lato/example-profile.json) and add the relevant parameter id to the `set-parameters` section, along with the value(s) that best fits the control. (Note that some controls allow more than one parameter.)
+### 3. Security Features
+- Non-root container execution
+- Automated password generation
+- Read-only secrets mounting
+- Database credential sharing
+- AWS authentication handling
 
-It is also possible to override the default parameters for a control, if needed.
+## Setup
 
-Once new parameters are set in the profile, please run `make generate` to re-generate the control Markdown with the new parameters.
+### Local Development
+```bash
+# Create secrets file
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
 
-### Control Families Guide
+# Configure environment
+cp .env.example .env
+```
 
-There are families of controls defined by their prefix (i.e. `ul-`), which groups the controls. Here is a guide for helping which of our *17 control families* you might want to write to. [`control_freak`](https://controlfreak.risk-redux.io/families/) is another great resource for learning more about these families, but note that it is specific to rev. 5, lacks the rev. 4 appendix J, and doesn't include GSA container-related controls.
+### Docker Deployment
+```bash
+# Build and start services
+docker-compose up -d
 
-[Detailed control family descriptions here.](./control-families.md)
+# View logs
+docker-compose logs -f
 
-## Notes
+# Check service status
+docker-compose ps
+```
 
-- We are using JSON primarily because `trestle` YAML support is spotty. This may change in the future.
-- We do not need a lot of features that `trestle` offers and are currently using a small subset of these features.
-  - This workflow is intentionally primitive: for instance, we generate only the control documentation and fill out the implementation details.
-  - We do not support profile authoring or editing or adding items in the control statement.
-  - This also means that we do not (currently) have plans to actually use the SSP OSCAL file but the SSP is nonetheless is intended to be a final compliance artifact.
-- The use of "System Security Plan" here is somewhat of a misnomer but is a byproduct of `compliance-trestle` and its [opinionated directory structure](https://ibm.github.io/compliance-trestle/cli/#opinionated-directory-structure).
-- Link checking and general compliance documentation validation via CI pipelines is a possible future improvement.
+### Local (Conda Environment)
+1. Set up Python environment:
+```bash
+conda env create -f environment.yml
+conda activate app
 
-## Demos
+# If you need to rebuild/remove the environment:
+conda deactivate
+conda env remove -n app
+```
 
-Some [asciinema](https://asciinema.org/) demos are provided under [demos/](./demos/). To play back these terminal sessions, please `brew install asciinema` if you have not already. You can run these demos locally by doing, for instance, `asciinema play demos/trestle-add-control.cast`. (If you wish to record a demo, `asciinema rec <file>`; control-d exits the recording.)
+2. Configure Steampipe:
+```bash
+mkdir -p ~/.steampipe/config
+cp steampipe/aws.spc ~/.steampipe/config/
+```
 
-## TODO
+3. Configure AWS credentials:
+```bash
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+# Edit secrets.toml with your AWS credentials
+```
 
-1. Installation
-2. Detailed usage
-3. git submodule support
+5. Start the application:
+```bash
+streamlit run app.py
+```
 
-## Attribution
+### Docker
+```
+.
+├── app.py              # Main Streamlit application
+├── Dockerfile          # Docker configuration
+├── docker-compose.yml  # Docker services configuration
+├── environment.yml     # Conda environment specification
+└── steampipe/         # Steampipe configurations
+    └── aws.spc        # AWS plugin configuration
+```
 
-The majority of this work is directly taken from the work of the Login.gov team and their compliance documentation.
+### Zscaler Configuration
 
-## Getting started for non-python devs
+If you're running this application in an environment using Zscaler for SSL/TLS inspection:
 
-1. Install [pipenv](https://docs.pipenv.org/)
-1. Run `pipenv install` to install dependencies from `Pipfile`
-1. Run `pipenv shell` to start a shell with the correct virtual environment configured
+1. Obtain Zscaler Root Certificate:
+   - Download from your organization's Zscaler portal
+   - Or extract from your browser's trusted certificates
+
+2. Configure environment:
+   ```bash
+   # Copy and edit .env file
+   cp .env.example .env
+   
+   # Set Zscaler configuration
+   ZSCALER_CERT=/path/to/ZscalerRootCertificate.crt
+   HTTP_PROXY=http://your-zscaler-proxy:80
+   HTTPS_PROXY=http://your-zscaler-proxy:80
+   NO_PROXY=localhost,127.0.0.1
+   ```
+
+3. Build with Zscaler support:
+   ```bash
+   docker-compose build --no-cache
+   ```
+
+Note: If not using Zscaler, leave ZSCALER_CERT commented out in .env file.
+
+## Troubleshooting
+
+### Common Issues
+1. Steampipe connection errors:
+   - Verify AWS credentials
+
+2. Database connection issues:
+   - For Docker: `docker-compose logs db`
+   - For local: Check PostgreSQL service status
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+

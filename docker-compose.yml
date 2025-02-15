@@ -1,0 +1,58 @@
+version: '3.8'
+
+x-db-credentials: &db-credentials
+  POSTGRES_DB: ${POSTGRES_DB:-compliancedb}
+  POSTGRES_USER: ${POSTGRES_USER:-complianceuser}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}
+
+services:
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      <<: *db-credentials
+      POSTGRES_HOST: db
+    volumes:
+      - ./app/src:/app
+      - ./.streamlit:/root/.streamlit:ro  # Add this line
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      <<: *db-credentials
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-complianceuser} -d ${POSTGRES_DB:-compliancedb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  powerpipe:
+    build: 
+      context: ./powerpipe
+    environment:
+      <<: *db-credentials
+      POSTGRES_HOST: db
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "9033:9033"
+      - "9193:9193"
+    volumes:
+      - powerpipe_data:/workspace
+      - steampipe_data:/home/steampipe/.steampipe
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  steampipe_data:
+  powerpipe_data:
